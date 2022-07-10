@@ -1,34 +1,7 @@
-#!/usr/bin/env bash
-
-# REQ: Creates the deploy pipeline. <skr 2022-06-14*>
-
-[ $(bash --version | head -1 | cut -d ' ' -f4) == '5.1.16(1)-release' ] && \
-[ $(az version --query '"azure-cli"' -o tsv)   == '2.37.0'            ] && \
-[ $(gh version | head -1 | cut -d ' ' -f3)     == '2.12.1'            ] || \
-exit
-
-set -o errexit
-set -o noclobber
-set -o noglob
-set -o nounset
-set -o pipefail
-set -o xtrace
-
-make_group() {
-  declare -Ag group=(
-    [name]='transcraft'
-    [location]='centralus'
-  )
-}
-
-make_principal() {
-  declare -Ag principal=(
-    [name]='github_actions'
-    [role]='contributor'
-    [scope]="/subscriptions/$1/resourceGroups/$2"
-  )
-}
-
+# [ $(bash --version | head -1 | cut -d ' ' -f4) == '5.1.16(1)-release' ] && \
+# [ $(az version --query '"azure-cli"' -o tsv)   == '2.37.0'            ] && \
+# [ $(gh version | head -1 | cut -d ' ' -f3)     == '2.12.1'            ] || \
+# exit
 main() {
   fetch_subscription_id
   fetch_user_id

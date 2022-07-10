@@ -11,7 +11,7 @@ set -o nounset
 set -o noglob
 set -o pipefail
 
-if [[ $LVL == 'DEBUG' ]]
+if [[ $LOG == 'DEBUG' ]]
 then
 	set -o xtrace
 fi

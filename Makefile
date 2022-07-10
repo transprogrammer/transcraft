@@ -1,84 +1,79 @@
 # NOTE: To see a list of typical targets, execute `make help` <>
 
-PROJECT = transcraft
 SHELL = /usr/bin/env bash
-OUT_DIR = out
 
-# log levels:
-LVLS = debug info warn error fatal
-export LVL ?= warn
+PROJ = transcraft
+SUB := $(shell az account show -o tsv --query id)
 
-# environments:
+LOGS = debug info warn error fatal
+export LOG ?= warn
+
 ENVS = dev prod
 ENV ?= dev
-ENV_DIR = $(OUT_DIR)/$(ENV)
 
-# resource group:
-RG_NAME = $(PROJECT)-$(ENV)
-RG_LOC = centralus
+GROUP = $(PROJ)-$(ENV)
+LOCATION = centralus
 
-# bastion:
-BT_NAME = tulip-$(ENV)
+BASTION = tulip-$(ENV)
+MACHINE = lilac-$(ENV)
+SERVICE = peony-$(ENV)
 
-# virtual machine:
-VM_NAME = lilac-$(ENV)
+OUTDIR = out
+ENVDIR = $(OUTDIR)/$(ENV)
+KEYDIR = $(ENVDIR)/key
+MIMEDIR = $(ENVDIR)/mime
 
-# service principal:
-SP_NAME = github_actions
+PRIVKEY = $(KEYDIR)/id_rsa
+PUBKEY = $(PRIVKEY).pub
+KEYS = $(PRIVKEY) $(PUBKEY)
 
-# ssh:
-SSH_DIR = $(ENV_DIR)/ssh
-export SSH_PRIVATE_KEY = $(SSH_DIR)/id_rsa
-export SSH_PUBLIC_KEY = $(SSH_PRIVATE_KEYFILE).pub
-SSH_KEYFILES = $(SSH_PRIVATE_KEYFILE) $(SSH_PUBLIC_KEYFILE)
-
-# cloud-init:
-MIME_DIR = $(ENV_DIR)/mime
-export MIME_FILE = $(MIME_DIR)/cloud-init.mime
+MIME= $(MIMEDIR)/cloud-init.mime
 
 # general:
-ALL_FILES = $(MIME_FILE) $(SSH_KEYFILES)
-VALIDATIONS = validate-log-level validate-environment
+ALL = $(MIME) $(KEYS)
+VALS = validate-log-level validate-environment
 
 # cleaning targets:
 .PHONY: clean reset
 clean:
-	rm -fv $(MIME_FILE)
+	rm -fv $(MIME)
 
 reset: clean
-	rm -fv $(SSH_KEYFILES)
+	rm -fv $(KEYS)
 
 # build targets:
-.PHONY: all dirs keyfiles mimefile
+.PHONY: all dirs keys mime
 
-all: dirs keyfiles mimefile
+all: dirs keys mime
 
-dirs: $(SSH_DIR) $(MIME_DIR)
-$(SSH_DIR):
-	mkdir -p $(SSH_DIR)
+dirs: $(KEYDIR) $(MIMEDIR)
+$(KEYDIR):
+	mkdir -p $(KEYDIR)
 
-$(MIME_DIR):
-	mkdir -p $(MIME_DIR)
+$(MIMEDIR):
+	mkdir -p $(MIMEDIR)
 
-keyfiles: $(SSH_KEYFILES)
-$(SSH_KEYFILES) &: $(SSH_DIR)
-	make/build/keyfiles.bash -e $(ENV) -k $(SSH_PRIVATE_KEYFILE)
+keys: $(KEYS)
+$(KEYS) &: $(KEYDIR)
+	make/build/keyfiles.bash -e $(ENV) -k $(PRIVKEY)
 
-mimefile: $(MIME_FILE)
-$(MIME_FILE): $(MIME_DIR) cloud-init/*/*
-	make/build/mimefile.bash -u $(MIME_FILE)
+mime: $(MIME)
+$(MIME): $(MIMEDIR) cloud-init/*/*
+	make/build/mime.bash -u $(MIME)
 
 # deployment targets:
 .PHONY: resource-group service-principal arm-deployment
 
 resource-group: $(VALIDATIONS)
-	make/deploy/resource-group.bash -g $(RG_NAME) -l $(RG_LOC)
+	make/deploy/resource-group.bash -g $(GROUP_NAME) -l $(GROUP_LOC)
 
 service-principal: $(VALIDATIONS)
-	make/deploy/service.bash -g $(RG_NAME) -l $(RG_LOC)
+	make/deploy/service-principal.bash \
+	  --subscription-id $(SUB_ID)
+		--resource-group  $(GROUP_NAME) -l $(GROUP_LOC)
 
 arm-deployment: validate-log-level $(ALL_FILES)
-	make/deploy/deploy.bash -b $(BT_NAME) -l $(RG_LOC) -g $(RG_NAME) -m $(VM_NAME)
+	make/deploy/deploy.bash -b $(BASTION) -l $(GROUP_LOC) -g $(GROUP_NAME) -m $(MACHINE)
 
 # utility targets:
 .PHONY: prequisites connection
@@ -87,7 +82,7 @@ prequisites: validate-log-level
 	make/util/prequisites.bash
 
 connection: validate-log-level
-	make/util/connection.bash -b $(BT_NAME) -l $(RG_LOC) -g $(RG_NAME) -m $(VM_NAME)
+	make/util/connection.bash -b $(BASTION) -l $(GROUP_LOC) -g $(GROUP_NAME) -m $(MACHINE)
 
 # miscellanous targets:
 .PHONY: help validate-log-level validate-environment
@@ -100,11 +95,11 @@ help:
 	@echo 'Build targets:'
 	@echo '  all                  - Build all targets.'
 	@echo '  dirs                 - Build output directories.'
-	@echo '  keyfiles             - Build ssh keyfiles.'
-	@echo '  mimefile             - Build a cloud-init mimefile.'
+	@echo '  keys                 - Build ssh keyfiles.'
+	@echo '  mime                 - Build a cloud-init mimefile.'
 	@echo ''
 	@echo 'Deploy targets:'
-	@echo '  arm-deployment       - Deploy a $(PROJECT) environment.'
+	@echo '  arm-deployment       - Deploy a $(PROJ) environment.'
 	@echo '  resource-group       - Create an environment resource group.'
 	@echo '  service-principal    - Create an environment service principal.'
 	@echo
@@ -119,8 +114,8 @@ help:
 	@echo ''
 
 validate-log-level:
-ifeq ($(filter $(LVL),$(LVLS)),)
-	$(error Log level $(LVL) is invalid.)
+ifeq ($(filter $(LOG),$(LOGS)),)
+	$(error Log level $(LOG) is invalid.)
 endif
 
 validate-environment:

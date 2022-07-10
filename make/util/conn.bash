@@ -1,6 +1,6 @@
 # REQ: Creates an ssh connection via bastion. <skr 2022-07>
 
-if [[ $LVL == 'debug' ]]
+if [[ $LOG == 'debug' ]]
 then
   set -o xtrace
 fi
