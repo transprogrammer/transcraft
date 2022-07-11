@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# REQ: Creates the environment resource group. <>
+# REQ: Creates the environment service principal. <>
 
 set +o braceexpand
 set -o errexit
@@ -19,13 +19,13 @@ dirname="$(dirname "$realpath")"
 cd "$dirname/.."
 
 source _lib/options.bash
-source _lib/models/resource_group.bash
+source _lib/models/service_principal.bash
 
 function main {
   parse_options "$@"
 
-  make_resource_group
-  create_resource_group
+  make_service_principal
+  create_service_principal
 }
 
 main "$@"

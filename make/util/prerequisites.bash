@@ -2,7 +2,7 @@
 
 # REQ: Installs utilities with homebrew. <skr 2022-06 s:inprogress>
 
-if [[ $LVL == 'debug' ]]
+if [[ $LOG == 'debug' ]]
 then
   set -o xtrace
 fi
